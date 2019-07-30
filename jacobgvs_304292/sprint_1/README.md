@@ -1,7 +1,7 @@
 
 # CSDA 1050 - Sprint 1
 
-## The link between Socioeconimics and pedestrian accidents
+## The link between Socioeconomics and Pedestrian Accidents
 This project looks at the relationship between a person’s socioeconomic status and their likelihood to be involved in a pedestrian – motor vehicle accident in the city of Toronto.
 
 ## Motivation
