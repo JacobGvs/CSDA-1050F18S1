@@ -1,7 +1,6 @@
 
-# CSDA 1050
+# CSDA 1050 - Sprint 1
 
-## Sprint 1
 
 ### Describe what is in here. 
 
