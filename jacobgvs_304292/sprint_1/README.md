@@ -1,5 +1,5 @@
 
-## CSDA 1050 - Sprint 1
+# CSDA 1050 - Sprint 1
 
 ## The link between Socioeconimics and pedestrian accidents
 This project looks at the relationship between a person’s socioeconomic status and their likelihood to be involved in a pedestrian – motor vehicle accident in the city of Toronto.
@@ -29,15 +29,15 @@ the likelihood of being involved in a vehicular accident. These studies have oft
 ## Data Sources
 There are 2 main data sources that will be used.
 
-    [KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
+[KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
 
-    [KSI TTC/Municipal Vehicle Dataset](https://data.torontopolice.on.ca/datasets/ttc-municipal-vehicle)
+[KSI TTC/Municipal Vehicle Dataset](https://data.torontopolice.on.ca/datasets/ttc-municipal-vehicle)
 
-    [Simply Analytics - 2016 Census Tract](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C1)
+[Simply Analytics - 2016 Census Tract](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C1)
 
-    [Simply Analytics - 2016 Dissemination Area](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C2)
+[Simply Analytics - 2016 Dissemination Area](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C2)
 
-    [City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
+[City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
 
 ## Code Example
 Show what the library does as concisely as possible, developers should be able to figure out **how** your project solves their problem by looking at the code example. Make sure the API you are showing off is obvious, and that your code is short and concise.
@@ -53,20 +53,13 @@ The code is written in such a way that it should automatically read all necessar
 
 The "Socioeconomis.nb.html" file contains a preview of the results of running the provided code if you do not have Rstudio installed
 
-## API Reference
-
-Depending on the size of the project, if it is small and simple enough the reference docs can be added to the README. For medium size to larger projects it is important to at least provide a link to where the API reference docs live.
-
-## Tests
-Describe and show how to run the tests with code examples.
-
-#### Results and Findings
+## Results and Findings
 - All data sets have been obtained and one additional dataset has been identified that may be required to facilitate clustering views.
 - I had anticipated that the census data would group economic results at neighbpouhood level and that is not the case.
 - I have identified most if not all the necessary data sets and succesfully mapped the spatial coordinates and polygons.
 - I have identified a package that makes the mapping and review of spatial data relatively easy.
 
-#### Next Steps
+## Next Steps
 - Spatial data needs to be modified form a Lat/Long configuration to CSR
 - All accients need to be associated to a census dissemination area, census tract, and city neighbourhood polygon.
 - We will need to see if there is any corrolation between average income in a given area and frequency of accidents.
