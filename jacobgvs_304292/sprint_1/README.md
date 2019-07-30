@@ -29,9 +29,13 @@ the likelihood of being involved in a vehicular accident. These studies have oft
 ## Data Sources
 There are 2 main data sources that will be used.
 [KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
+
 [KSI TTC/Municipal Vehicle Dataset](https://data.torontopolice.on.ca/datasets/ttc-municipal-vehicle)
+
 [Simply Analytics - 2016 Census Tract](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C1)
+
 [Simply Analytics - 2016 Dissemination Area](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C2)
+
 [City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
 
 ## Code Example
