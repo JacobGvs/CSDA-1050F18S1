@@ -50,7 +50,7 @@ ksi_merged <- merge(ksi_ped,ksi_ttc, by="Index")
 #### Neighbourhood Boundaries - City of Toronto
 
 The City of Toronto also maintains a list that defines the boundaries of all the neighbourhoods in the city. A file containing the spatial data required to map these neighbourhoods can be downloaded form the City of Toronto open data portal. Due to how this file will download, unlike the KSI data, we cannot directly read the GeoJson file but have to download it before the file can be read.
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE}
 set_wd <- function() {
   library(rstudioapi) # make sure you have it installed
 current_path <- getActiveDocumentContext()$path 
@@ -58,7 +58,7 @@ setwd(dirname(current_path))
 print( getwd() )
 }
 
-download.file("https://ckan0.cf.opendata.inter.sandbox-toronto.ca/download_resource/1d02b0f0-d735-4469-8f71-ea6d96b319e4?format=geojson&projection=4326", destfile = "datasets/Neighbourhoods.geojson", )
+download.file("https://ckan0.cf.opendata.inter.prod-toronto.ca/download_resource/a083c865-6d60-4d1d-b6c6-b0c8a85f9c15?format=geojson&projection=4326", destfile = "datasets/Neighbourhoods.geojson", )
 
 nbh <- geojsonio::geojson_read("datasets/Neighbourhoods.geojson", what = "sp")
 
@@ -116,6 +116,7 @@ leaflet(nbh) %>%
 
 #### Simply Analytics - Census Data
 
+We can similarly plot both the census tract and dissemination area files pulled from Simply Analytics.
 ```{r}
 leaflet(cen_spgdf1) %>%
   addTiles() %>%
@@ -128,38 +129,4 @@ leaflet(cen_spgdf2) %>%
   addPolygons()
 ```
 
-
-
-
-
-
-Assign each Spatial data point to a polygon
-```{r}
-ksi_nbh <- point.in.poly(KSI_merged, nbh)
-head(ksi_nbh@data)
-```
-
-```{r}
-# Number of points in each polygon
-tapply(ksi_nbh@data$ObjectId, ksi_nbh@data$OBJECTID, FUN=length)
-
-# Mean lead in each polygon
-tapply(ksi_nbh@data$ObjectId, ksi_nbh@data$OBJECTID, FUN=mean)
-```
-
-```{r}
-leaflet(ksi_nbh) %>%
-  addTiles() %>%
-  addMarkers(lng = ksi_nbh$LONGITUDE.x , lat = ksi_nbh$LATITUDE.x , clusterOptions = ksi_nbh$OBJECTID) %>%
-```
-
-
-```{r}
-cen_shp1 <- st_read("datasets/SimplyAnalytics_C1/C1.shp")
-```
-
-```{r}
-cen_spgdf1 <- as(cen_shp1, "Spatial")
-class(cen_spgdf1)
-```
-
+Our next step will be to assing each accident in the KSI data to a dissemination area polygon.
