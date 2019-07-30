@@ -37,7 +37,11 @@ There are 5 main data sources that will be used.
 ## Screenshots
 Downloading and mapping the data sets provides us a preliminary look at how the various components work together. 
 
-![KSI Accidents](link-to-image)
+![KSI Accidents](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/JacobGVS_304292/sprint_1/Accidents.PNG)
+
+![Toronto Neighbourhoods](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/JacobGVS_304292/sprint_1/Neighbourhood.PNG)
+
+![Simply Analytics Census Tracts](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/JacobGVS_304292/sprint_1/Census%20Tract.PNG)
 
 ## Installation
 To intall this project you will need to download and opend the "Socioeconomics.Rmd" file.
