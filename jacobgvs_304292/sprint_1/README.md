@@ -7,27 +7,22 @@ This project looks at the relationship between a person’s socioeconomic status
 ## Motivation
 Every year pedestrians and transit users in the city of Toronto continue to be involved in motor vehicle collisions. Although the city continues to employ multiple methods to improve road safety for these users, the idea that inequality and safety are tied to the socioeconomic status of an area is prevalent. The purpose of this project is to study the relationship between a person’s socioeconomic status and their likelihood to be involved in a pedestrian – motor vehicle accident. This information can then be leveraged in determining locations where road safety improvements will have the biggest impact in lowering this socioeconomic inequality in the city of Toronto.
 
+## Review
+There are a number of papers and studies that have drawn the link between socioeconomic status and
+the likelihood of being involved in a vehicular accident. These studies have often either taken a much broader approach to the impact of socioeconomics on vehicular accidents by looking at all accidents or have focused on a much narrower subset of data while pulling additional variables such as subset of pedestrian accidents been much more focused taking into account the prevalence of road features in each socioeconomic differed based on socioeconomics of the area and its impact on child safety.
+
 ## Build status
 Sprint 1 represents the data aquisition and discovery phase of the project.
 A final copy of the project will be available in the "final" folder once the project has been completed.
-
-[![Build Status](https://travis-ci.org/akashnimare/foco.svg?branch=master)](https://travis-ci.org/akashnimare/foco)
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/akashnimare/foco?branch=master&svg=true)](https://ci.appveyor.com/project/akashnimare/foco/branch/master)
-
-## Screenshots
-Include logo/demo screenshot etc.
 
 ## Tech/framework used
 
 <b>Built with</b>
 - [RStudio](https://www.rstudio.com/)
 
-## Review
-There are a number of papers and studies that have drawn the link between socioeconomic status and
-the likelihood of being involved in a vehicular accident. These studies have often either taken a much broader approach to the impact of socioeconomics on vehicular accidents by looking at all accidents or have focused on a much narrower subset of data while pulling additional variables such as subset of pedestrian accidents been much more focused taking into account the prevalence of road features in each socioeconomic differed based on socioeconomics of the area and its impact on child safety.
 
 ## Data Sources
-There are 2 main data sources that will be used.
+There are 5 main data sources that will be used.
 
 [KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
 
@@ -39,13 +34,15 @@ There are 2 main data sources that will be used.
 
 [City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
 
-## Code Example
-Show what the library does as concisely as possible, developers should be able to figure out **how** your project solves their problem by looking at the code example. Make sure the API you are showing off is obvious, and that your code is short and concise.
+## Screenshots
+Downloading and mapping the data sets provides us a preliminary look at how the various components work together. 
+
+![KSI Accidents](link-to-image)
 
 ## Installation
 To intall this project you will need to download and opend the "Socioeconomics.Rmd" file.
 
-You will also need to download the "final/Datasets" folder housed in the final folder in the github. This needs to be saved to the same folder as the "Socioeconomics.Rmd".
+You will also need to download the "/Datasets" folder. This needs to be saved to the same folder as the "Socioeconomics.Rmd" and contains the information downloaded from Simply Analytics.
 
 To run the code, open the "Socioeconomics.Rmd" file in RStuio and select to run all chunks.
 
@@ -66,14 +63,3 @@ The "Socioeconomis.nb.html" file contains a preview of the results of running th
 
 
 [Jacob Geeves](https://github.com/JacobGvs)
-
-
-
-##### Results and Findings:
-  - All data sets have been obtained and one additional dataset has been identified that may be required to facilitate clustering views.
-  - I had anticipated that the census data would group economic results at neighbpouhood level and that is not the case.
-  - I have identified most if not all the necessary data sets and succesfully mapped the spatial coordinates and polygons.
-  - I have identified a package that makes the mapping and review of spatial data relatively easy.
-
-
-
