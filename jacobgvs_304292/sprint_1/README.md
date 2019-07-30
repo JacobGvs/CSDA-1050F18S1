@@ -1,8 +1,65 @@
 
-# CSDA 1050 - Sprint 1
+## CSDA 1050 - Sprint 1
+
+## The link between Socioeconimics and pedestrian accidents
+This project looks at the relationship between a person’s socioeconomic status and their likelihood to be involved in a pedestrian – motor vehicle accident in the city of Toronto.
+
+## Motivation
+Every year pedestrians and transit users in the city of Toronto continue to be involved in motor vehicle collisions. Although the city continues to employ multiple methods to improve road safety for these users, the idea that inequality and safety are tied to the socioeconomic status of an area is prevalent. The purpose of this project is to study the relationship between a person’s socioeconomic status and their likelihood to be involved in a pedestrian – motor vehicle accident. This information can then be leveraged in determining locations where road safety improvements will have the biggest impact in lowering this socioeconomic inequality in the city of Toronto.
+
+## Build status
+Sprint 1 represents the data aquisition and discovery phase of the project.
+A final copy of the project will be available in the "final" folder once the project has been completed.
+
+[![Build Status](https://travis-ci.org/akashnimare/foco.svg?branch=master)](https://travis-ci.org/akashnimare/foco)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/akashnimare/foco?branch=master&svg=true)](https://ci.appveyor.com/project/akashnimare/foco/branch/master)
+
+## Screenshots
+Include logo/demo screenshot etc.
+
+## Tech/framework used
+
+<b>Built with</b>
+- [RStudio](https://www.rstudio.com/)
+
+## Features
+There are a number of papers and studies that have drawn the link between socioeconomic status and
+the likelihood of being involved in a vehicular accident. These studies have often either taken a much broader approach to the impact of socioeconomics on vehicular accidents by looking at all accidents or have focused on a much narrower subset of data while pulling additional variables such as subset of pedestrian accidents been much more focused taking into account the prevalence of road features in each socioeconomic differed based on socioeconomics of the area and its impact on child safety.
+
+## Data Sources
+There are 2 main data sources that will be used.
+[KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
+[KSI TTC/Municipal Vehicle Dataset](https://data.torontopolice.on.ca/datasets/ttc-municipal-vehicle)
+[Simply Analytics - 2016 Census Tract](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C1)
+[Simply Analytics - 2016 Dissemination Area](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C2)
+[City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
+
+## Code Example
+Show what the library does as concisely as possible, developers should be able to figure out **how** your project solves their problem by looking at the code example. Make sure the API you are showing off is obvious, and that your code is short and concise.
+
+## Installation
+Provide step by step series of examples and explanations about how to get a development env running.
+
+## API Reference
+
+Depending on the size of the project, if it is small and simple enough the reference docs can be added to the README. For medium size to larger projects it is important to at least provide a link to where the API reference docs live.
+
+## Tests
+Describe and show how to run the tests with code examples.
+
+## How to use?
+If people like your project they’ll want to learn how they can use it. To do so include step by step guide to use your project.
+
+#### Next Steps
+Spatial data needs to be modified form a Lat/Long configuration to CSR
+All accients need to be associated to a census dissemination area, census tract, and city neighbourhood polygon.
+We will need to see if there is any corrolation between average income in a given area and frequency of accidents.
 
 
-### Describe what is in here. 
+[Yourname]()
+
+
+## Describe what is in here. 
 
 This file contains the text and code as found in the Socioeconomics.Rmd file found in the "final" folder of this directory.
 
@@ -17,6 +74,7 @@ There are 5 data sets being pulled in total:
 All downloaded datasets can be found in the "final/Datasets" folder.
 
 The included code will download the various datasets and proceed to start mapping the various datasets.
+
 
 ### Describe what is needed to be done to run it. 
 
