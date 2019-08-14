@@ -28,28 +28,27 @@ A final copy of the project will be available in the "final" folder once the pro
 <b>Built with</b>
 - [RStudio](https://www.rstudio.com/)
 
-
 ## Data Sources
+All data sources are outlined in the sprint 1 and final README files.
+
 There are 5 main data sources that will be used.
 
-[KSI Pedestrian Dataset](https://data.torontopolice.on.ca/datasets/pedestrians)
-
-[KSI TTC/Municipal Vehicle Dataset](https://data.torontopolice.on.ca/datasets/ttc-municipal-vehicle)
-
-[Simply Analytics - 2016 Census Tract](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C1)
-
-[Simply Analytics - 2016 Dissemination Area](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/final/Datasets/SimplyAnalytics_C2)
-
-[City of Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
+[Sprint 1 Link](https://github.com/JacobGvs/CSDA-1050F18S1/tree/master/jacobgvs_304292/sprint_1)
 
 ## Screenshots
-Downloading and mapping the data sets provides us a preliminary look at how the various components work together. 
+The spatialEco package allowed us to identify if a spatial data point was within a polygon and automatically leftjoin the applicable polygon data to our SpatialPointsDataframe. 
 
-![KSI Accidents](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_1/Accidents.PNG)
+![Associating Data with the spatialEco package](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/AssociatingDatasets.PNG)
 
-![Toronto Neighbourhoods](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_1/Neighbourhood.PNG)
+This allowed us to begin reviewing the dataset and its relation to the average income of a census tract.
 
-![Simply Analytics Census Tracts](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_1/Census%20Tract.PNG)
+![Household Average Income Histogram](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/Income_histogram.PNG)
+
+We were also able to begin joining all the variables together into one map.
+
+![Leaflet Mapping - Neighbourhood, census tract, and dissemination area options](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/ksi_polygon_mapping.PNG)
+
+![Leaflet Mapping - Data Point Labels](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/ksi_polygon_label.PNG)
 
 ## Installation
 To intall this project you will need to download and opend the "Socioeconomics.Rmd" file.
@@ -63,15 +62,16 @@ The code is written in such a way that it should automatically read all necessar
 The "Socioeconomis.nb.html" file contains a preview of the results of running the provided code if you do not have Rstudio installed
 
 ## Results and Findings
-- All data sets have been obtained and one additional dataset has been identified that may be required to facilitate clustering views.
-- I had anticipated that the census data would group economic results at neighbpouhood level and that is not the case.
-- I have identified most if not all the necessary data sets and succesfully mapped the spatial coordinates and polygons.
-- I have identified a package that makes the mapping and review of spatial data relatively easy.
+- Discovered that some of the assumptions for next steps from Sprint 1 were incorrect. Specifically that in Rstudio there does not appear to be a need to reproject spatial data stored in a Lat/Long configuration into CSR inorder to associate them one to another.
+- Unfortunately the discovery above is not well explained anywhere and it took multiple different attempts of various different ways to associate spatial data points to spatial data polygons before i was able to find a method that actually worked and maintained the geometry data that was required to generate the polygons.
+- Although leaflet is a powerful package that makes mapping of spatial data very simple it appears some of the features that are used to cluster points based on the polygon they are associated to may not exist in Rstudio.
 
 ## Next Steps
-- Spatial data needs to be modified form a Lat/Long configuration to CSR
-- All accients need to be associated to a census dissemination area, census tract, and city neighbourhood polygon.
-- We will need to see if there is any corrolation between average income in a given area and frequency of accidents.
+- Establish income bandwiths and associate back to main datatable.
+- Continue with frequency review and comparison of various variables that was only possible once they could be compared to household average income.
+- Further work will be needed to review the clustering on the dataset. Currently clusters are unreadable due in part to the large variations in income data. thsi shoudl be improved once income can be placed into bandwiths.
+- Review how to bind markers in leaflet to their polygon(s). Currently unclear if this feature is available in Rstudio or only available using the leaflet code html or leaflet in python.
+- Continue working with the spatialEco package to model the datasets.
 
 
 [Jacob Geeves](https://github.com/JacobGvs)
