@@ -8,9 +8,9 @@ Start by loading the various libraries and packages we will be using.
 
 The "Pacman" package will automatically install any packages you do not currently have installed and load the applicable libraries.
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, error=FALSE}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(leaflet, sf, shapefiles, rgdal, geojsonio, geojsonR, spdep, maptools, spdplyr, rmapshaper, curl, reticulate, raster, dplyr, gridExtra, tmap, tidyverse, geojsonsf)
+pacman::p_load(dplyr, spdplyr, sf, sp, spdep, spatialEco, rgdal, geojsonio, geojsonR, leaflet, leaflet.minicharts, leaflet.extras,leafsync, maptools, tmap, tidyverse, ggplot, gclus, rpart)
 ```
 
 
@@ -169,49 +169,14 @@ We can easily identify all unique items in the INVTYPE column and select those t
 unique(ksi_merged@data$INVTYPE)
 ```
 
-```{r}
-ksi_modified <- ksi_merged
-ksi_modified@data$Index_ <- as.character(ksi_modified@data$Index_)
-ksi_modified@data$ACCNUM <- as.character(ksi_modified@data$ACCNUM)
-ksi_modified@data$DATE <- as.Date.character(ksi_modified@data$DATE)
-ksi_modified@data$TIME <- as.character(ksi_modified@data$TIME)
-ksi_modified@data$ROAD_CLASS <- as.character(ksi_modified@data$ROAD_CLASS)
-ksi_modified@data$District <- as.character(ksi_modified@data$District)
-ksi_modified@data$VISIBILITY <- as.character(ksi_modified@data$VISIBILITY)
-ksi_modified@data$LIGHT <- as.character(ksi_modified@data$LIGHT)
-ksi_modified@data$RDSFCOND <- as.character(ksi_modified@data$RDSFCOND)
-ksi_modified@data$ACCLASS <- as.character(ksi_modified@data$ACCLASS)
-ksi_modified@data$IMPACTYPE <- as.character(ksi_modified@data$IMPACTYPE)
-ksi_modified@data$INVTYPE <- as.character(ksi_modified@data$INVTYPE)
-ksi_modified@data$INVAGE <- as.character(ksi_modified@data$INVAGE)
-ksi_modified@data$INJURY <- as.character(ksi_modified@data$INJURY)
-ksi_modified@data$INITDIR <- as.character(ksi_modified@data$INITDIR)
-ksi_modified@data$PEDTYPE <- as.character(ksi_modified@data$PEDTYPE)
-ksi_modified@data$PEDACT <- as.character(ksi_modified@data$PEDACT)
-ksi_modified@data$PEDCOND <- as.character(ksi_modified@data$PEDCOND)
-ksi_modified@data$PEDESTRIAN <- as.character(ksi_modified@data$PEDESTRIAN)
-ksi_modified@data$AUTOMOBILE <- as.character(ksi_modified@data$AUTOMOBILE)
-ksi_modified@data$MOTORCYCLE <- as.character(ksi_modified@data$MOTORCYCLE)
-ksi_modified@data$TRUCK <- as.character(ksi_modified@data$TRUCK)
-ksi_modified@data$EMERG_VEH <- as.character(ksi_modified@data$EMERG_VEH)
-ksi_modified@data$SPEEDING <- as.character(ksi_modified@data$SPEEDING)
-ksi_modified@data$AG_DRIV <- as.character(ksi_modified@data$AG_DRIV)
-ksi_modified@data$REDLIGHT <- as.character(ksi_modified@data$REDLIGHT)
-ksi_modified@data$ALCOHOL <- as.character(ksi_modified@data$ALCOHOL)
-ksi_modified@data$DISABILITY <- as.character(ksi_modified@data$DISABILITY)
-
-
-unique(ksi_modified@data$INVTYPE)
-```
-
 If we look at our list of options, there are a few different entries we should be considering to be a pedestrian.
 For this review we will be filtering out all entries where the INVTYPE is "Pedestrian", "Pedestrian - Not Hit", "In-Line Skater", or "Wheelchair".
 
 So as not to lose our merged dataset, we will also create a new filtered datatable.
-
+We can easily identify and, if required in the future, modify the list of items being filtered into our datatable by setting them as a target
 ```{r}
-target <- c("Pedestrian", "Pedestrian - Not Hit", "In-Line Skater", "Wheelchair")
-ksi_modified <- ksi_merged[ksi_merged@data$INVTYPE %in% target,]
+target_invtype <- c("Pedestrian", "Pedestrian - Not Hit", "In-Line Skater", "Wheelchair")
+ksi_modified <- ksi_merged[ksi_merged@data$INVTYPE %in% target_invtype,]
 head(ksi_modified@data, 20)
 ```
 
@@ -219,8 +184,8 @@ There are also a number of columns that will not be needed for our review and ca
 These include: OFFSET, VEHTYPE, MANOEUVER, DRIVACT, DRIVCOND, CYCLISTYPE, CYCACT, CYCCOND, CYCLIST, TRSN_CITY_VEH, TRSN_CITY_, coords.x1, coords.x2
 
 ```{r}
-targetc <- c("OFFSET", "VEHTYPE", "MANOEUVER", "DRIVACT", "DRIVCOND", "CYCLISTYPE", "CYCACT", "CYCCOND", "CYCLIST", "TRSN_CITY_VEH", "TRSN_CITY_", "coords.x1", "coords.x2")
-ksi_modified <- ksi_modified[,-which(names(ksi_modified@data) %in% c(targetc))]
+target_coll <- c("OFFSET", "VEHTYPE", "MANOEUVER", "DRIVACT", "DRIVCOND", "CYCLISTYPE", "CYCACT", "CYCCOND", "CYCLIST", "TRSN_CITY_VEH", "TRSN_CITY_", "coords.x1", "coords.x2")
+ksi_modified <- ksi_modified[,-which(names(ksi_modified@data) %in% c(target_coll))]
 head(ksi_modified@data, 20)
 ```
 
@@ -282,34 +247,117 @@ head(ksi_coord@data, 20)
 
 Next we will add in the disemination area information. Being the most granular this will allow us to accurately associate an average income to each accident.
 
-```{r}
+```{r warning=FALSE}
 ksi_coord <- spatialEco::point.in.poly(ksi_coord, disem)
 head(ksi_coord@data, 20)
 ```
 
-We now have a data set with average income 
+Now that we have a assigned an average income to each accident we can start working to review our data and learn more abot what story it can tell.
+
+Since we are trying to look at socioeconomiv impact on accidents we will first start by focusing on average income.
+
+Lets start by creating a histogram of the Household Average Income information for our accidents.
 
 ```{r}
+qplot(ksi_coord$Household.Average.Income,
+      geom="histogram",
+      binwidth = 5,
+      main = "Histogram Average Income",
+      xlab = "Average Income",
+      fill=I("blue"), 
+      col=I("red"))
+```
+
+As we can see the majority of losses are clustered at the bottom end of the income scale. However this histogram can be deceiving. The average income varies so greatly between the lowest and highest values that it is hard to identify what income brakets this cluster actually represents.
+
+We can re-present the same graph with a reduced bin width but it does little to make the data points more meaningful.
+
+```{r}
+qplot(ksi_coord$Household.Average.Income,
+      geom="histogram",
+      main = "Histogram Average Income",
+      xlab = "Average Income",
+      fill=I("blue"), 
+      col=I("red"))
+```
+
+
+To allow us to more easily review the data set we will also convert it from a SpatialPointsDataFrame to a regular dataframe. We can then pull some basic information about household income.
+
+```{r}
+ksi_sf <- as.data.frame(ksi_coord@data)
+mean(ksi_sf$Household.Average.Income, na.rm = TRUE)
+mode(ksi_sf$Household.Average.Income)
+range(ksi_sf$Household.Average.Income, na.rm = TRUE)
+quantile(ksi_sf$Household.Average.Income, na.rm = TRUE)
+quantile(ksi_sf$Household.Average.Income, na.rm = TRUE, probs = c(0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.00))
+```
+
+The quantile results are very interesting in that we can see that the bottom 25% of incomes actually varies between $0 and $65,000 and the highest value is well beyond being plausibly compared to the rest
+
+This does give some indication that we will probably want to focus on the bottom 50% of incomes depedning on how the income level corelates to frequency of accidents
+
+
+```{r warning=FALSE}
+ksi_sf <- as.data.frame(ksi_coord@data)
+
+freq <- table(ksi_sf$YEAR, ksi_sf$AREA_NAME, ksi_sf$ROAD_CLASS, ksi_sf$Household.Average.Income)
+yearfreq <- ksi_sf %>%
+  group_by(YEAR) %>%
+  summarise(freq = n())
+yearfreq <- as.data.frame(yearfreq)
+AreaLossFreq <- ksi_sf %>%
+  group_by(AREA_NAME) %>%
+  summarise(freq = n())
+AreaLossFreq <- as.data.frame(AreaLossFreq)
+RoadClassFreq <- ksi_sf %>%
+  group_by(ROAD_CLASS) %>%
+  summarise(freq = n())
+RoadClassFreq <- as.data.frame(RoadClassFreq)
+AveIncomeFreq <- ksi_sf %>%
+  group_by(Household.Average.Income) %>%
+  summarise(freq = n())
+AveIncomeFreq <- as.data.frame(AveIncomeFreq)
+```
+
+A standard frequency plot will do much better at indicating the average income of the areas where these pedestrian accidents usually occur but again will not provide any relevant data
+```{r}
+plot(AveIncomeFreq)
+```
+
+We will want to use the quantile results to set income bandwiths to apply to each of our accidents. As evident from the hitograms and frequency plot we will also want to look at focusing on the lower quantiles.
+
+To do:
+
+1) Establish income bandwiths and associate back to main datatable.
+
+2) Continue with frequency revie and comparison of various variables.
+
+3) Correct clustering as part of the evaluation. Example below does not help given it cannot be read.
+
+```{r warning=FALSE}
 library(pvclust)
-d <- dist(ksi_coord@data, method = "euclidean")
-fit <- hclust(d, method="ward")
+d <- dist(ksi_sf, method = "euclidean")
+fit <- hclust(d, method="ward.D2")
 plot(fit)
-groups <- cutree(fit, k=10)
-rect.hclust(fit, k=10, border="red")
+groups <- cutree(fit, k=5)
+rect.hclust(fit, k=5, border="red")
 ```
 
-```{r}
-rpart(data=ksi_coord, formula = Index_ ~ Household.Average.Income + spatial_id + AREA_NAME, method="class",control=rpart.control(minsplit=30, cp=0.001)) 
-```
-
-
+4) Review how to bind markers in leaflet to their polygon(s). Currently unclear if this feature is available in Rstudio or only available using the leaflet code html or leaflet in python
 
 ```{r}
+Lcontent <- paste("Year:", ksi_coord@data$YEAR,
+                  "Income:",ksi_coord@data$Household.Average.Income, 
+                  "Location:",
+                  ksi_coord@data$STREET1)
+
 leaflet(ksi_coord) %>%
   addTiles() %>%
   addCircleMarkers(
     stroke = FALSE, fillOpacity = 0.5,weight = 1,
-    label = ~as.character(ksi_coord@data$YEAR, ksi_coord@data$Street1)) %>%
+    label = ~as.character(Lcontent),
+    clusterOptions = markerClusterOptions()) %>%
   addPolygons(data = nbh_modified,
               fillColor = "transparent", 
               color = "#000000",
@@ -329,168 +377,34 @@ leaflet(ksi_coord) %>%
               group = "Disemination Area", 
               weight = .4) %>%
   addLayersControl(overlayGroups =c("Neighbourhood", "Census Tract", "Disemination Area"),
-                   options = layersControlOptions(collapsed=FALSE)) %>%
-  addLegend(data = disem,
-            values  = disem@data$`Household Average Income`,
-            color = ~qpal("viridis"),
-            position = "bottomright",
-            title = "City Wide Household Average Income",
-            labFormat = labelFormat(digits=1))
+                   options = layersControlOptions(collapsed=FALSE))
+
 ```
 
 
 
 
-### This binds the disemination and census tract polygons together but does not relate one to another. Need to relate the disemination areas to a census tract.
-```{r}
-ctrdisem <-bind(disem, ctr)
-leaflet(ctrdisem) %>%
-  addTiles() %>%
-  addPolygons()
-```
-
-```{r}
-head(ctrdisem,10)
-```
-
-
-```{r}
-plot(ctr, axes=TRUE, las=1)
-plot(ctr, border='blue', col='yellow', lwd=3, add=TRUE)
-points(ksi_merged, col='red', pch=20, cex=1)
-```
-
-
-```{r}
-plot(disem, axes=TRUE, las=1)
-plot(disem, border='blue', col='yellow', lwd=3, add=TRUE)
-points(ksi_merged, col='red', pch=20, cex=1)
-```
-
-
-```{r}
-plot(ctr, axes=TRUE, las=1)
-plot(ctr, border='blue', lwd=3, add=TRUE)
-plot(disem, border='green', lwd=1, add=TRUE)
-points(ksi_merged, col='red', pch=20, cex=.5)
-```
 
 
 
 
-```{r}
-ksi_coord <- spatialEco::point.in.poly(ksi_modified, ctr)
-head(ksi_coord@data)
-```
-
-
-
-```{r}
-head(ctr_df, n=4)
-```
-
-```{r}
-st_crs(ctr_df)
-```
-
-
-```{r}
-library(tmap) 
-tm_shape(ctr_df) + tm_polygons(col="grey", border.col="white")
-```
-
-```{r}
-tm_shape(ctr_df) + tm_polygons(col = "Household Average Income")+
-  tm_legend(outside = TRUE) +
-  tm_facets( by = "spatial_id", nrow = 5)
-```
-
-```{r}
-st_crs(ksi_modified)
-```
-
-```{r}
-ksi_modified_dp <- data.frame(ksi_modified)
-class(ksi_modified_dp)
-head(ksi_modified_dp, 5)
-```
-
-
-```{r}
-nbh_ctr <- bind(nbh, ctr)
-plot(nbh, axes=TRUE, las=1)
-plot(nbh, border='blue', col='yellow', lwd=3, add=TRUE)
-points(ksi_coord, col='red', pch=20, cex=1)
-```
-
-
-```{r}
-nbh_ctr2 <- st_union(ctr_df, ctr_df)
-head(nbh_ctr2, 5)
-```
-
-```{r}
-ksi_coord <- spatialEco::point.in.poly(ksi_coord, nbh)
-head(ksi_coord@data)
-```
 
 
 
 
-Convert Spatial ID in Disem to a character
-```{r}
-disem@data$spatial_id <- as.character(disem@data$spatial_id)
-```
-
-```{r}
-map1 <- leaflet() %>%
-  addTiles() %>%
-  addPolygons(data = disem, fillColor = "yellow", color = "blue", fillOpacity = 0.5, weight = 1, smoothFactor = 0.2) %>%
-  addMarkers(data = ksi_merged, lng = ksi_merged$LONGITUDE, lat = ksi_merged$LATITUDE, clusterOptions = markerClusterOptions())
-print(map1)
-```
-
-```{r}
-disem_sf <- st_as_sf(disem)
-ctr_sf <- st_as_sf(ctr)
-ksi_sf <- st_as_sf(ksi_merged)
-nbh_sf <- st_as_sf(nbh)
-```
-
-```{r}
-disem_sf <- st_transform(ctr, crs, partial = TRUE, check = FALSE, use_gdal = TRUE)
-```
 
 
 
 
-```{r possible delete}
-ksi_modified@data$Index_ <- as.character(ksi_modified@data$Index_)
-ksi_modified@data$ACCNUM <- as.character(ksi_modified@data$ACCNUM)
-ksi_modified@data$DATE <- as.Date.character(ksi_modified@data$DATE)
-ksi_modified@data$TIME <- as.character(ksi_modified@data$TIME)
-ksi_modified@data$ROAD_CLASS <- as.character(ksi_modified@data$ROAD_CLASS)
-ksi_modified@data$District <- as.character(ksi_modified@data$District)
-ksi_modified@data$VISIBILITY <- as.character(ksi_modified@data$VISIBILITY)
-ksi_modified@data$LIGHT <- as.character(ksi_modified@data$LIGHT)
-ksi_modified@data$RDSFCOND <- as.character(ksi_modified@data$RDSFCOND)
-ksi_modified@data$ACCLASS <- as.character(ksi_modified@data$ACCLASS)
-ksi_modified@data$IMPACTYPE <- as.character(ksi_modified@data$IMPACTYPE)
-ksi_modified@data$INVTYPE <- as.character(ksi_modified@data$INVTYPE)
-ksi_modified@data$INVAGE <- as.character(ksi_modified@data$INVAGE)
-ksi_modified@data$INJURY <- as.character(ksi_modified@data$INJURY)
-ksi_modified@data$INITDIR <- as.character(ksi_modified@data$INITDIR)
-ksi_modified@data$PEDTYPE <- as.character(ksi_modified@data$PEDTYPE)
-ksi_modified@data$PEDACT <- as.character(ksi_modified@data$PEDACT)
-ksi_modified@data$PEDCOND <- as.character(ksi_modified@data$PEDCOND)
-ksi_modified@data$PEDESTRIAN <- as.character(ksi_modified@data$PEDESTRIAN)
-ksi_modified@data$AUTOMOBILE <- as.character(ksi_modified@data$AUTOMOBILE)
-ksi_modified@data$MOTORCYCLE <- as.character(ksi_modified@data$MOTORCYCLE)
-ksi_modified@data$TRUCK <- as.character(ksi_modified@data$TRUCK)
-ksi_modified@data$EMERG_VEH <- as.character(ksi_modified@data$EMERG_VEH)
-ksi_modified@data$SPEEDING <- as.character(ksi_modified@data$SPEEDING)
-ksi_modified@data$AG_DRIV <- as.character(ksi_modified@data$AG_DRIV)
-ksi_modified@data$REDLIGHT <- as.character(ksi_modified@data$REDLIGHT)
-ksi_modified@data$ALCOHOL <- as.character(ksi_modified@data$ALCOHOL)
-ksi_modified@data$DISABILITY <- as.character(ksi_modified@data$DISABILITY)
-```
+
+
+
+
+
+
+
+
+
+
+
+
