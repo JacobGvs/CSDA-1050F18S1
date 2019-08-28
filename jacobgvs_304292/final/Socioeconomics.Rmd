@@ -3,54 +3,58 @@ title: "Socioeconomics of Pedestrian Accidents"
 output: html_notebook
 ---
 
+## Introduction
+
+Every year pedestrians continue to be involved in motor vehicle collisions. Thought the city continues to employ multiple methods to improve road safety for these users, the idea that inequality and safety are tied to the socioeconomic status of an area is prevalent. The purpose of this project is to study the relationship between a person’s socioeconomic status and their likelihood of being involved in a pedestrian – motor vehicle accident. This information can then be leveraged in determining locations where road safety improvements will have the biggest impact in lowering the socioeconomic inequality in the city of Toronto.
+
+The purpose of this project is to determine if the socioeconomic status of a given area has an impact on the likelihood of pedestrians being hit by a vehicle.
+
 
 Start by loading the various libraries and packages we will be using.
 
 The "Pacman" package will automatically install any packages you do not currently have installed and load the applicable libraries.
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, error=FALSE}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(leaflet, sp, sf, shapefiles, rgdal, geojsonio, geojsonR, spatialEco, maptools, dyplr, curl)
+pacman::p_load(tidyverse, MASS, hablar, dplyr, spdplyr, sf, sp, spdep, spatialEco, rgdal, geojsonio, geojsonR, leaflet, leaflet.minicharts, leaflet.extras,leafsync, maptools, tmap, tidyverse, ggplot, gclus, rpart, arules, corrplot, corrgram, crs)
 ```
 
 
 ## Create our Data Tables
 
-#### KSI Pedestrian Dataset
+#### KSI Pedestrian Data set
 
-This dataset is a subset of the Killed and Seriously Injured (KSI) dataset collected by the Toronto Police Service from 2008-2018. These events include any serious or fatal collisions where a Pedestrian is involved. To learn more about Pedestrians related collisions in Toronto you can follow this link: http://data.torontopolice.on.ca/pages/pedestrians
+This data set is a subset of the Killed and Seriously Injured (KSI) data set collected by the Toronto Police Service from 2008-2018. These events include any serious or fatal collisions where a Pedestrian is involved. To learn more about Pedestrians related collisions in Toronto you can follow this link: http://data.torontopolice.on.ca/pages/pedestrians
 
-We will use the FROM_GeoJson command from the "geojsonR" package to download a json file from the provided URL. The geojson_read command from the "geojsonio" and formating form the "sp" package can then be used to read the json and generate a SpatialPointsDataFrame 
+We will use the FROM_GeoJson command from the "geojsonR" package to download a json file from the provided URL. The geojson_read command from the "geojsonio" and formatting form the "sp" package can then be used to read the json and generate a SpatialPointsDataFrame 
 ```{r}
-json_ped <- FROM_GeoJson("https://opendata.arcgis.com/datasets/3dedc9bff625450990b8d480f397ad3f_0.geojson")
 ksi_ped <- geojsonio::geojson_read("https://opendata.arcgis.com/datasets/3dedc9bff625450990b8d480f397ad3f_0.geojson", what = "sp")
 head(ksi_ped)
 ```
 
-#### KSI TTC/Municipal Vehicle Dataset
+#### KSI TTC/Municipal Vehicle Data set
 
-This dataset is a subset of the Killed and Seriously Injured (KSI) dataset collected by the Toronto Police Service from 2008-2018. These events include any serious or fatal collision involving an operator or passenger of a TTC, Transit Vehicle, streetcar or Municipal Vehicle. To learn more about TTC-Municipal Vehicle related collisions in Toronto you can follow this link: http://data.torontopolice.on.ca/pages/ttc-municipal-vehicle
+This data set is a subset of the Killed and Seriously Injured (KSI) data set collected by the Toronto Police Service from 2008-2018. These events include any serious or fatal collision involving an operator or passenger of a TTC, Transit Vehicle, streetcar or Municipal Vehicle. To learn more about TTC-Municipal Vehicle related collisions in Toronto you can follow this link: http://data.torontopolice.on.ca/pages/ttc-municipal-vehicle
 
-We will use the FROM_GeoJson command from the "geojsonR" package to download a json file from the provided URL. The geojson_read command from the "geojsonio" and formating form the "sp" package can then be used to read the json and generate a SpatialPointsDataFrame 
+We will use the FROM_GeoJson command from the "geojsonR" package to download a json file from the provided URL. The geojson_read command from the "geojsonio" and formatting form the "sp" package can then be used to read the json and generate a SpatialPointsDataFrame 
 ```{r}
-json_ttc <- FROM_GeoJson("https://opendata.arcgis.com/datasets/dc4751278e604d65b0886b9765d4b551_0.geojson")
 ksi_ttc <- geojsonio::geojson_read("https://opendata.arcgis.com/datasets/dc4751278e604d65b0886b9765d4b551_0.geojson", what = "sp")
 head(ksi_ttc)
 ```
 
 #### Merge KSI_TTC and KSI_Ped
 
-As you will have noticed from the descritpions both the KSI_PED and KSI_TTC datasets are themselves subsets of the Toronto Police Services' KSI Dataset. We downloaded them as seperate dataframes to enable faster downloads as they make up a small portion of the full KSI dataset, which would take significantly more time to download and sort.
-Because they come from the same base dataset and have the same schema we can merge them back into one dataframe to work with. We will merge them based on the "Index" to ensure there are no duplicates created due to the merging process.
+As you will have noticed from the descriptions both the KSI_PED and KSI_TTC data sets are themselves subsets of the Toronto Police Services' KSI Data set. We downloaded them as separate data frames to enable faster downloads as they make up a small portion of the full KSI data set, which would take significantly more time to download and sort.
+Because they come from the same base data set and have the same schema we can merge them back into one data frame to work with. We will merge them based on the "Index_" to ensure there are no duplicates created due to the merging process.
 ```{r}
-ksi_merged <- merge(ksi_ped,ksi_ttc, by="Index")
+ksi_merged <- merge(ksi_ped,ksi_ttc, by="Index_")
 ```
 
 
 #### Neighbourhood Boundaries - City of Toronto
 
 The City of Toronto also maintains a list that defines the boundaries of all the neighbourhoods in the city. A file containing the spatial data required to map these neighbourhoods can be downloaded form the City of Toronto open data portal. Due to how this file will download, unlike the KSI data, we cannot directly read the GeoJson file but have to download it before the file can be read.
-```{r include=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 set_wd <- function() {
   library(rstudioapi) # make sure you have it installed
 current_path <- getActiveDocumentContext()$path 
@@ -58,7 +62,7 @@ setwd(dirname(current_path))
 print( getwd() )
 }
 
-download.file("https://ckan0.cf.opendata.inter.sandbox-toronto.ca/download_resource/1d02b0f0-d735-4469-8f71-ea6d96b319e4?format=geojson&projection=4326", destfile = "datasets/Neighbourhoods.geojson", )
+download.file("https://ckan0.cf.opendata.inter.prod-toronto.ca/download_resource/a083c865-6d60-4d1d-b6c6-b0c8a85f9c15?format=geojson&projection=4326", destfile = "datasets/Neighbourhoods.geojson", )
 
 nbh <- geojsonio::geojson_read("datasets/Neighbourhoods.geojson", what = "sp")
 
@@ -67,47 +71,49 @@ head(nbh)
 
 #### Simply Analytics - Census Data
 
-From Simply Analytics i have downloaded shapefiles containing average income by  census track and subdivision. These two shapefiles will usefull in drilling down beyond the neighbourhood.
-Both shapefiles can be uploaded into a spatial dataframe using the st_read command from the "sf" package we installed earlier then converting them to a SpatialPolygonsDataFrame.
+From Simply Analytics i have downloaded shape-files containing average income by  census track and dissemination areas in the city. These two shape files will useful in drilling down beyond the neighbourhood.
+Both shape-files can be uploaded into a spatial data frame using the st_read command from the "sf" package we installed earlier then converting them to a SpatialPolygonsDataFrame.
 
 ```{r}
-cen_shp1 <- st_read("datasets/SimplyAnalytics_C1/C1.shp")
-cen_spgdf1 <- as(cen_shp1, "Spatial")
-class(cen_spgdf1)
+ogrInfo(dsn="datasets/SimplyAnalytics_C1", layer="C1")
+ctr <- readOGR(dsn = "datasets/SimplyAnalytics_C1", layer = "C1")
+names(ctr@data)[names(ctr@data)=="VALUE0"] <- "Household Total Income After-Tax"
+names(ctr@data)[names(ctr@data)=="VALUE1"] <- "Household Aggregate Income"
+names(ctr@data)[names(ctr@data)=="VALUE2"] <- "Household Average Income"
+head(ctr)
 ```
 
 ```{r}
-cen_shp2 <- st_read("datasets/SimplyAnalytics_C2/C2.shp")
-cen_spgdf2 <- as(cen_shp2, "Spatial")
-class(cen_spgdf2)
+ogrInfo(dsn="datasets/SimplyAnalytics_C2", layer="C2")
+disem <- readOGR(dsn = "datasets/SimplyAnalytics_C2", layer = "C2")
+names(disem@data)[names(disem@data)=="VALUE0"] <- "Household Total Income After-Tax"
+names(disem@data)[names(disem@data)=="VALUE1"] <- "Household Aggregate Income"
+names(disem@data)[names(disem@data)=="VALUE2"] <- "Household Average Income"
+summary(disem)
+head(disem@data)
 ```
 
-#### Additional Datatables
 
-One additional datatable may be needed depending on how we choose to cluster the KSI data.
-At a high level grouping accidents to a given neighbourhood as defined by the city then using the census data to further cluster by census track and subdivision will be ideal. I may need to pull the Neighbourhood Profiles data set from the city of Toronto to get an average income level by neighbourhood as this does not appear to be avaialble directly from the census datasets.
+## Reviewing the Data sets
 
-
-## Reviewing the Datasets
-
-With our datasets downloaded we can start by looking through the data. Becasue we are dealing almost exclusively with spatial data the easiest way to get a handle on the data is by mapping it.
+With our data sets downloaded we can start by looking through the data. Because we are dealing almost exclusively with spatial data the easiest way to get a handle on the data is by mapping it.
 To do this I will be using features from the "leaflet" package.
 
-#### KSI_merged Dataset
+#### KSI_merged Data set
 
-Lets satrt by getting an idea of where accidents are occuring. The leaflet package will map the data for us. To make this more readable I have had the system autocluster the accidents. These clusters don't have any relation to specific neighbourhoods and will need to be adjusted later so that the clusters are in line with our other datasets.
+Lets start by getting an idea of where accidents are occurring. The leaflet package will map the data for us. To make this more readable I have had the system auto cluster the accidents. These clusters don't have any relation to specific neighbourhoods and will need to be adjusted later so that the clusters are in line with our other data sets.
 ```{r}
 leaflet(ksi_merged) %>%
   addTiles() %>%
   addMarkers(lng = ksi_merged$LONGITUDE, lat = ksi_merged$LATITUDE, clusterOptions = markerClusterOptions())
 ```
 
-This map will allow you to zoom in and the clusters will auto adjust as you zoom in and out. These clusters are based on proximity to a central point. Once you get to the lowest zoom levels, clicking on a cluster will map the individual accidents. Details for each accident are not currenlty included in the mapping.
+This map will allow you to zoom in and the clusters will auto adjust as you zoom in and out. These clusters are based on proximity to a central point. Once you get to the lowest zoom levels, clicking on a cluster will map the individual accidents. Details for each accident are not currently included in the mapping.
 
 
 #### Neighbourhood Boundaries - City of Toronto
 
-Our next dataset contains the boundary lines for various neighbourhoods in Toronto. mapping this will begin to give some dimension to how we intend to cluster accidents going forward.
+Our next data set contains the boundary lines for various neighbourhoods in Toronto. mapping this will begin to give some dimension to how we intend to cluster accidents going forward.
 ```{r}
 leaflet(nbh) %>%
   addTiles() %>%
@@ -116,50 +122,752 @@ leaflet(nbh) %>%
 
 #### Simply Analytics - Census Data
 
+We can similarly plot both the census tract and dissemination area files pulled from Simply Analytics.
 ```{r}
-leaflet(cen_spgdf1) %>%
+leaflet(ctr) %>%
   addTiles() %>%
   addPolygons()
 ```
 
 ```{r}
-leaflet(cen_spgdf2) %>%
+leaflet(disem) %>%
   addTiles() %>%
   addPolygons()
 ```
 
+Our next step will be to assign each accident in the KSI data to a dissemination area polygon. But before we can do that we will first have to clean up the various data sets.
 
 
+## Cleaning the Data
 
+Before we begin we need to ensure that our various data sets are compatible.
 
-
-Assign each Spatial data point to a polygon
+Using the CRS function in the SF package We can check the coordinate reference system being used by our main files and can see that they are all the same.
 ```{r}
-ksi_nbh <- point.in.poly(KSI_merged, nbh)
-head(ksi_nbh@data)
+st_crs(ksi_merged)
+st_crs(ctr)
+st_crs(disem)
+st_crs(nbh)
+```
+
+We luckily all the files we have downloaded use the same co-ordinate reference system so we will be able to compare and associate them to one another without having to re-project them into a common co-ordinate system. This is especially convenient given that the mapping package w are using "leaflet" does not support "CRS" one of the other reference systems.
+
+### Cleaning the KSI data
+
+As we review the data sets one thing you may have noticed is that the KSI data set contains a large number of potentially duplicate entries.
+
+```{r}
+head(ksi_merged@data, 20)
+```
+
+While each accident is assigned a different index id number(Index_), in most cases multiple index numbers are assigned to the same account number(ACCNUM). This is because, for each accident, the driver of the vehicle, the pedestrian, and any other applicable individual related to the loss has their information recorded to the data set. This is most evident if you look at the involved vehicle type (INVTYPE) columns.
+
+Since this review is focused on pedestrian accidents, we will filter our KSI_Merged file to include only instances where the column INVTYPE is a pedestrian.
+
+We can easily identify all unique items in the INVTYPE column and select those that are representative of pedestrians.
+
+```{r}
+unique(ksi_merged@data$INVTYPE)
+```
+
+If we look at our list of options, there are a few different entries we should be considering to be a pedestrian.
+For this review we will be filtering out all entries where the INVTYPE is "Pedestrian", "Pedestrian - Not Hit", "In-Line Skater", or "Wheelchair".
+
+So as not to lose our merged data set, we will also create a new filtered data table.
+We can easily identify and, if required in the future, modify the list of items being filtered into our data table by setting them as a target
+```{r}
+target_invtype <- c("Pedestrian", "Pedestrian - Not Hit", "In-Line Skater", "Wheelchair")
+ksi_modified <- ksi_merged[ksi_merged@data$INVTYPE %in% target_invtype,]
+head(ksi_modified@data, 20)
+```
+
+There are also a number of columns that will not be needed for our review and can be removed from our modified data set.
+These include: OFFSET, VEHTYPE, MANOEUVER, DRIVACT, DRIVCOND, CYCLISTYPE, CYCACT, CYCCOND, CYCLIST, TRSN_CITY_VEH, TRSN_CITY_, coords.x1, coords.x2, Ward_Name, Ward_ID, Hood_ID, Hood_Name, IMPACTYPE, INVTYPE, PEDESTRIAN, ACCLASS, Division, ObjectId
+
+```{r}
+target_coll <- c("OFFSET", "VEHTYPE", "MANOEUVER", "DRIVACT", "DRIVCOND", "CYCLISTYPE", "CYCACT", "CYCCOND", "CYCLIST", "TRSN_CITY_VEH", "TRSN_CITY_", "coords.x1", "coords.x2", "Ward_Name", "Ward_ID", "Hood_ID", "Hood_Name", "IMPACTYPE", "INVTYPE", "PEDESTRIAN", "ACCLASS", "Division", "ObjectId")
+ksi_modified <- ksi_modified[,-which(names(ksi_modified@data) %in% c(target_coll))]
+head(ksi_modified@data, 20)
+```
+
+### Cleaning the Toronto Neighbourhood data
+
+Next we will look at the Toronto Neighbourhood data set.
+
+```{r}
+head(nbh@data, 20)
+```
+
+We can see that for the most part all columns in this data set are useful. The columns that will not be of use and can be removed are:
+  PARENT_AREA_ID - this field contains no unique values
+  AREA_ATTR_ID - this is variable is identical to AREA_ID
+  AREA_LONG_CODE - this is variable is identical to AREA_SHORT_CODE
+  AREA_SHORT_CODE - this variable is contained withing AREA_NAME
+  AREA_DESC - this is variable is identical to AREA_NAME
+  X - this field contains no unique values
+  Y - this field contains no unique values
+
+```{r}
+unique(nbh@data$PARENT_AREA_ID)
+unique(nbh@data$X)
+unique(nbh@data$Y)
 ```
 
 ```{r}
-# Number of points in each polygon
-tapply(ksi_nbh@data$ObjectId, ksi_nbh@data$OBJECTID, FUN=length)
+targetnbh <- c("PARENT_AREA_ID", "AREA_ATTR_ID", "AREA_SHORT_CODE" ,"AREA_LONG_CODE", "AREA_DESC", "X", "Y")
+nbh_modified <- nbh
+nbh_modified <- nbh_modified[,-which(names(nbh_modified@data) %in% c(targetnbh))]
+head(nbh_modified@data, 20)
+```
 
-# Mean lead in each polygon
-tapply(ksi_nbh@data$ObjectId, ksi_nbh@data$OBJECTID, FUN=mean)
+### Cleaning the Census Tract and Dissemination data
+
+Next we will look at the Toronto Neighbourhood data set.
+
+```{r}
+head(ctr@data, 20)
+```
+
+We can see that these have a very minimal number of fields. We will however remove a few prior to joining our data sets just to simplify the final output.
+
+```{r}
+ctr_modified <- ctr
+ctr_modified <- ctr_modified[,-which(names(ctr_modified@data) %in% c("name", "Household Total Income After-Tax", "Household Aggregate Income"))]
+head(ctr_modified@data, 20)
+```
+
+We will make the same modification to the dissemination area data.
+
+```{r}
+disem_modified <- disem
+disem_modified <- disem_modified[,-which(names(disem_modified@data) %in% c("name", "Household Total Income After-Tax", "Household Aggregate Income"))]
+head(disem_modified@data, 20)
+```
+
+
+## Associating the Data sets
+
+We are interested in associating all our spatial polygon data frames to the KSI data points that represent each pedestrian related accident.
+
+Our first task will be to join our KSI data set to a Toronto Neighbourhood.
+
+This can be done using the spatialEco package. The spatialEco::point.in.poly function intersects point and polygon feature classes and adds polygon attributes to points. This function will re-name columns with similar names so we will also address re-naming some of the newly added columns.
+
+```{r}
+ksi_coord <- spatialEco::point.in.poly(ksi_modified, nbh_modified)
+names(ksi_coord@data)[names(ksi_coord@data)=="LONGITUDE.x"] <- "LONGITUDE"
+names(ksi_coord@data)[names(ksi_coord@data)=="LATITUDE.x"] <- "LATITUDE"
+names(ksi_coord@data)[names(ksi_coord@data)=="LONGITUDE.y"] <- "LONGITUDE.nbh"
+names(ksi_coord@data)[names(ksi_coord@data)=="LATITUDE.y"] <- "LATITUDE.nbh"
+head(ksi_coord@data, 20)
+```
+
+Next we will add in the dissemination area information. Being the most granular this will allow us to accurately associate an average income to each accident.
+
+```{r warning=FALSE}
+ksi_coord <- spatialEco::point.in.poly(ksi_coord, disem_modified)
+head(ksi_coord@data, 20)
+```
+
+## Data Exploration
+
+Now that we have a assigned an average income to each accident we can start working to review our data and learn more about what story it can tell.
+
+To allow us to more easily review the data set we will also convert it from a SpatialPointsDataFrame to a regular data frame. We can then pull some basic information about household income.
+
+```{r}
+ksi_sf <- as.data.frame(ksi_coord@data)
+colSums(is.na(ksi_sf))
+```
+
+This function produces a data frame with infinite values which will cause some issues.
+So first we will omit these rows from the data frame.
+
+```{r}
+ksi_sf <- na.omit(ksi_sf)
+colSums(is.na(ksi_sf))
+```
+
+There are also a number of instances where a household income of 0 was identified. This occurs due to the spatial data points not properly associating to a polygon. There are a total of 9 entries with 0$ incomes so we will subset our data set to remove these points prior to analysis.
+
+```{r}
+ksi_sf <- subset(ksi_sf, Household.Average.Income > 0)
+summary(ksi_sf)
+```
+
+With those removed, lets begin by reviewing some of our data variables to see how informative they will be.
+
+### Merging and Transforming Variables
+
+If we look at the summary above we can see a series of columns with a Yes and a blank. 
+(AUTOMOBILE, MOTORCYCLE, TRUCK, EMERG_VEH, PASSENGER, SPEEDING, AG_DRIV, REDLIGHT, ALCOHOL, DISABILITY)
+The first 4 represent the type of vehicle involved in the accident. These can be combined into one column for easy review.
+```{r}
+ksi_sf$VEH <- if_else_(ksi_sf$AUTOMOBILE == "Yes", "Automobile", 
+                       if_else_(ksi_sf$MOTORCYCLE == "Yes","Motorcycle", 
+                                if_else_(ksi_sf$TRUCK == "Yes","Truck", 
+                                         if_else_(ksi_sf$EMERG_VEH == "Yes","Emergency Veh","NA"))))
+
+ggplot(ksi_sf, aes(x = VEH, y = ..prop.., group = 1))+
+  geom_bar(fill = "#0073C2FF")+
+  ggtitle("Accidents by Vehicle Type")
+```
+
+We can see that almost 90% of all instances involved an automobile rendering this string of variables statistically unimportant and giving a good indication that they can be removed from our data set. We will however keep the combined column that we created to review them.
+
+```{r}
+ksi_sf <- ksi_sf[,-which(names(ksi_sf) %in% c("AUTOMOBILE", "MOTORCYCLE", "TRUCK", "EMERG_VEH"))]
+```
+
+If we look at the other variables, they are all characteristics of the driver who was involved in the accident. It is a well established fact that factors like speeding, aggressive driving, running red lights, and driving while under the influence of alcohol are all going to make you more likely to be involved in an accident. However, this project is focused on the pedestrian, the surrounding community and controllable factors related to where the accident occurred that could be resulting in more pedestrian accidents. As such, we will not be focusing on any of these variables; we will however address the blank values.
+
+```{r}
+ksi_sf$PASSENGER <- ifelse(ksi_sf$PASSENGER == "Yes", "Yes", "No")
+ksi_sf$SPEEDING <- ifelse(ksi_sf$SPEEDING == "Yes", "Yes", "No")
+ksi_sf$AG_DRIV <- ifelse(ksi_sf$AG_DRIV == "Yes", "Yes", "No")
+ksi_sf$REDLIGHT <- ifelse(ksi_sf$REDLIGHT == "Yes", "Yes", "No")
+ksi_sf$ALCOHOL <- ifelse(ksi_sf$ALCOHOL == "Yes", "Yes", "No")
+ksi_sf$DISABILITY <- ifelse(ksi_sf$DISABILITY == "Yes", "Yes", "No")
+```
+
+We will also merge most of these values into one column so if needed they can be graphed against our other variables.
+
+```{r}
+ksi_sf$VEHFACTORS <- if_else_(ksi_sf$SPEEDING == "Yes", "Speeding", 
+                       if_else_(ksi_sf$AG_DRIV == "Yes","Aggressive Driving", 
+                                if_else_(ksi_sf$REDLIGHT == "Yes","Ran Red Light", 
+                                         if_else_(ksi_sf$ALCOHOL == "Yes","Alcohol",
+                                                  if_else_(ksi_sf$DISABILITY == "Yes","Disability", "NA")))))
+
+ksi_sf$PASSENGER <- ifelse(ksi_sf$PASSENGER == "Yes", 1, 0)
+ksi_sf$SPEEDING <- ifelse(ksi_sf$SPEEDING == "Yes", 1, 0)
+ksi_sf$AG_DRIV <- ifelse(ksi_sf$AG_DRIV == "Yes", 1, 0)
+ksi_sf$REDLIGHT <- ifelse(ksi_sf$REDLIGHT == "Yes", 1, 0)
+ksi_sf$ALCOHOL <- ifelse(ksi_sf$ALCOHOL == "Yes", 1, 0)
+ksi_sf$DISABILITY <- ifelse(ksi_sf$DISABILITY == "Yes", 1, 0)
+```
+
+### Graphing Variables
+
+Next we will review the other variables in our data set.
+
+The easiest way to gauge impact will be to graphically represent each variable based on frequency. WE will run through each variable in order commenting on what each is telling us about the data.
+
+#### Frequency by Year
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(YEAR), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by Year")
+```
+We can clearly see that the total number of accidents per year does not usually fluctuate all that much. Typically frequency will fluctuate in the 175 to 200 item range only dropping below 175 three times and exceeding 200 four times over the 11 years of data.
+
+#### Frequency by Road Class
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(ROAD_CLASS), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by Class of Road")
+```
+Virtually every pedestrian accident occurs on what is considered a Major Arterial road.
+
+#### Frequency by District
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(District), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by District")
+```
+This gives us a good idea of which general area is seeing the most pedestrian accidents. It is clear that the largest number of accidents are occurring in Toronto and East York which is expected given this district contains the downtown core.
+
+#### Frequency by Driver Influence
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(VEHFACTORS), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influenced by")+
+  ggtitle("Accidents by Driver Influence")
+```
+We can see that the when an accident occurs, a large number of those accidents are resulting as a result of Aggressive Driving
+
+#### Frequency by Accident Location
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(ACCLOC), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by Accident Location")
+```
+We can see that a large number of accidents are occurring at intersections. Unfortunately this field also incomplete with a large number of entries without.
+
+#### Frequency by Traffic Control Measures
+```{r}
+ggplot(data = ksi_sf)+
+  geom_bar(mapping = aes(TRAFFCTL), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by Traffic Control Measures")
+```
+We can see that most accidents occur in areas with no traffic control measures or at traffic lights.
+
+#### Frequency by Visibility
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(VISIBILITY), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents by Visibility")
+```
+Most accidents are also occurring when there are no factors impacting visibility
+
+#### Frequency by Type of Light
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(LIGHT), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Type of Lighting")+
+  ggtitle("Accidents by Type of Lighting")
+```
+Most accidents are also occurring in daylight with minimal numbers of accidents occurring during the other times of day when you would expect visibility issues to be of a bigger impact.
+
+#### Frequency by Road Condition
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(RDSFCOND), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Road Condition")+
+  ggtitle("Accidents by Road Condition")
+```
+These accidents are also occurring primarily in dry condition as opposed to conditions that would be more likely to reduce visibility or the drivers ability to handle the vehicle.
+
+#### Frequency by Vehicle Action
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(PEDTYPE), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Pedestrian Action")+
+  ggtitle("Accidents by Pedestrian Type")
+```
+This is one of the most interesting variable we have available and the least intuitive. Of all pedestrian accidents the most frequent involves pedestrians crossing mid-block. The next two most frequent are both crossings at intersections where we can see that pedestrians are actually more likely to be hit while crossing with the right of way as opposed to crossing without the right of way.
+
+#### Frequency by Pedestrian Action
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(PEDACT), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Pedestrian Action")+
+  ggtitle("Accidents by Pedestrian Action")
+```
+Surprisingly the pedestrian crossing mid-block form the graph above have disappeared.
+
+#### Frequency by Pedestrian Condition
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(PEDCOND), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Pedestrian Condition")+
+  ggtitle("Accidents by Pedestrian Condition")
+```
+Finally, we can see that pedestrian condition (aside from the pedestrian being inattentive) appears to have little impact on Pedestrian accidents.
+
+
+### Average Household Income
+
+Since we are studying whether socioeconomic factors impact the likelihood of an accident we also need to review the average household income.
+
+We can start by creating a histogram of the Household Average Income just to get an idea of the income spread we are working with.
+
+```{r}
+qplot(ksi_sf$Household.Average.Income,
+      geom="histogram",
+      binwidth = 5,
+      main = "Histogram Average Income",
+      xlab = "Average Income",
+      fill=I("blue"), 
+      col=I("red"))
+```
+
+As we can see the majority of losses are clustered at the bottom end of the income scale between $0 and $150k. However this histogram can be deceiving. The average income varies so greatly between the lowest and highest values that it is hard to identify what income brackets this cluster actually represents.
+
+We can re-present the same graph with an increased bin width to help make the data more meaningful.
+
+```{r}
+qplot(ksi_sf$Household.Average.Income,
+      geom="histogram",
+      main = "Histogram Average Income",
+      xlab = "Average Income",
+      fill=I("blue"), 
+      col=I("red"))
+```
+
+Ultimately there is too much variety in average household income. To get a better and more meaningful graph of income we would want to convert income to specified ranges.
+
+We can pull some basic variables to determine what those ranges should be.
+
+```{r}
+mean(ksi_sf$Household.Average.Income)
+mode(ksi_sf$Household.Average.Income)
+range(ksi_sf$Household.Average.Income)
+quantile(ksi_sf$Household.Average.Income)
+quantile(ksi_sf$Household.Average.Income, probs = c(0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.00))
+```
+
+The quantile results are very interesting in that we can see that the bottom 25% of incomes actually varies between $0 and $65,000 and the highest value income being $10 million dollars higher.
+
+This information combined with the histograms above give some indication that we will probably want to focus on the lower incomes between 30k and 150k.
+
+We can use the following code to 
+
+```{r}
+ksi_sf$Average_Income3 <- if_else(ksi_sf$Household.Average.Income <= 30000, "30", "0")
+ksi_sf$Average_Income4 <- if_else(ksi_sf$Household.Average.Income <= 40000, "40", "0")
+ksi_sf$Average_Income5 <- if_else(ksi_sf$Household.Average.Income <= 50000, "50", "0")
+ksi_sf$Average_Income6 <- if_else(ksi_sf$Household.Average.Income <= 60000, "60", "0")
+ksi_sf$Average_Income7 <- if_else(ksi_sf$Household.Average.Income <= 70000, "70", "0")
+ksi_sf$Average_Income8 <- if_else(ksi_sf$Household.Average.Income <= 80000, "80", "0")
+ksi_sf$Average_Income9 <- if_else(ksi_sf$Household.Average.Income <= 90000, "90", "0")
+ksi_sf$Average_Income10 <- if_else(ksi_sf$Household.Average.Income <= 100000, "100", "0")
+ksi_sf$Average_Income11 <- if_else(ksi_sf$Household.Average.Income <= 110000, "110", "0")
+ksi_sf$Average_Income12 <- if_else(ksi_sf$Household.Average.Income <= 120000, "120", "0")
+ksi_sf$Average_Income13 <- if_else(ksi_sf$Household.Average.Income <= 130000, "130", "0")
+ksi_sf$Average_Income14 <- if_else(ksi_sf$Household.Average.Income <= 140000, "140", "0")
+ksi_sf$Average_Income15 <- if_else(ksi_sf$Household.Average.Income <= 150000, "150", "0")
+ksi_sf$Average_Income16 <- if_else(ksi_sf$Household.Average.Income > 150000, "150+", "0")
+
+ksi_sf$Average_Income <- if_else(ksi_sf$Average_Income3 > 0, ksi_sf$Average_Income3, if_else(ksi_sf$Average_Income4 > 0, ksi_sf$Average_Income4,
+if_else(ksi_sf$Average_Income5 > 0, ksi_sf$Average_Income5, 
+if_else(ksi_sf$Average_Income6 > 0, ksi_sf$Average_Income6, 
+if_else(ksi_sf$Average_Income7 > 0, ksi_sf$Average_Income7, 
+if_else(ksi_sf$Average_Income8 > 0, ksi_sf$Average_Income8, 
+if_else(ksi_sf$Average_Income9 > 0, ksi_sf$Average_Income9, 
+if_else(ksi_sf$Average_Income10 > 0, ksi_sf$Average_Income10, 
+if_else(ksi_sf$Average_Income11 > 0, ksi_sf$Average_Income11,
+if_else(ksi_sf$Average_Income12 > 0, ksi_sf$Average_Income12,
+if_else(ksi_sf$Average_Income13 > 0, ksi_sf$Average_Income13,
+if_else(ksi_sf$Average_Income14 > 0, ksi_sf$Average_Income14,
+if_else(ksi_sf$Average_Income15 > 0, ksi_sf$Average_Income15,
+if_else(ksi_sf$Average_Income16 > 0, ksi_sf$Average_Income16,"NA"))))))))))))))
+
+ksi_sf <- ksi_sf[,-which(names(ksi_sf) %in% c("Average_Income3", "Average_Income4", "Average_Income5", "Average_Income6", "Average_Income7", "Average_Income8", "Average_Income9", "Average_Income10", "Average_Income11", "Average_Income12", "Average_Income13", "Average_Income14", "Average_Income15", "Average_Income16"))]
+
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(Average_Income), fill = "#0073C2FF")+
+  ggtitle("Accidents by Average Household Income in thousands")
+```
+
+We can clearly see that the highest volume of pedestrian accidents are occurring in neighbourhoods where the average household income is between $60K and $90k.
+Assuming the average household income is attributable to the income of two earners that would equate to an average salary per person of $30k to $45k.
+
+
+### Comparing Variables
+
+Having reviewed the variables at play in our data set we should take a moment to compare some of the more important variables to see if there is any correlation between factors
+
+#### Comparing Variable Frequency by Year
+
+We will quickly graph a few variable against the Year variable to see if the there are any obvious frequency changes year over year.
+
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(Average_Income),fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents per Year by Average Income")+
+  facet_wrap(~ YEAR)
+
 ```
 
 ```{r}
-leaflet(ksi_nbh) %>%
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(x = YEAR, fill = District))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents per District by Year")
+```
+
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(x = YEAR, fill = PEDACT))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Accidents per Pedestrian Action by Year")
+```
+
+
+
+#### Comparing Multiple Variables
+
+A few of the variables reviewed above really stand out.
+
+We saw based on the accident location that the majority of accidents occurred either at an intersection or at an undefined location. We also saw in looking at the vehicle action variable that vehicles most frequently hit pedestrians crossing mid-block, or crossing at an intersection while the vehicle turned right or left. 
+
+##### Accidents at intersections
+
+If we focus on the accidents if would be interesting to know what sort of traffic controls were in place at the various locations where accidents occurred.
+
+```{r}
+ggplot(data = ksi_sf) +
+  geom_bar(mapping = aes(x = ACCLOC, fill = TRAFFCTL))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Accident Location")+
+  ggtitle("Accidents by Location and Traffic Control")
+```
+
+We can see that when an accident occurred at an intersection, the intersection was typically controlled by traffic signal.
+
+We would naturally assume that traffic signals, baring other driver related factors, would make intersections safer for pedestrians provided of course that the pedestrian is following their traffic signals.  So is we want to determine if there is a driver related factor that could be negatively impacting the frequency of pedestrian accidents at intersections. Similarly, a majority of those same accidents involved drivers that were deemed to be driving excessively.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC ==c("At Intersection", "Intersection Related"))) +
+  geom_bar(mapping = aes(VEHFACTORS), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at intersections by Driver Influence")
+```
+
+With slightly over half the accidents occurring at an intersection involving aggressive drivers, the question should be asked if the pedestrian is acting in a way that is increasing their likely hood of being hit. This can be answered by factoring in the Pedestrian Action variable.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC ==c("At Intersection", "Intersection Related"))) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = PEDACT))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Intersections by Driver Influence and Pedestrian Action")
+```
+This tells us that when aggressive driving is a factor, pedestrian accidents at an intersection appear to be the result of driver error given that the vast majority of cases involve pedestrians crossing while they have the right of way.
+
+By contrast, pedestrian accidents at an intersection that don't involve aggressive driving seem to involve the pedestrian crossing without the right of way or at an intersection with no traffic control.
+
+So if in the majority of accident involving pedestrians at intersections the pedestrian is crossing the street with the right of way, what is the driver doing that is causing an accident. 
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC ==c("At Intersection", "Intersection Related"))) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = PEDTYPE))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents by Driver Influence by Vehicle Action")
+```
+
+This further clarifies what we identified in the graphs above. When aggressive driving is involved, Pedestrian accidents are occurring at intersections when the driver is turning left or right and much less frequently when they are driving straight through the intersection.
+
+##### Accident Location not Identified
+
+The other large grouping of accidents were those that occurred at locations that could not be identified. If we quickly run through the same exercise as above we will see:
+- A large majority of accidents do not involve any specified driver influence
+- 3 types of action seem to dominate running out into the roadway, getting on/off a school bus, and crossing where no traffic control is in place.
+- This correlates to a pedestrian most frequently being struck by a vehicle mid-block or while attempting to cross the roadway without the right of way.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == " ")) +
+  geom_bar(mapping = aes(VEHFACTORS), fill = "#0073C2FF")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Undefined Locations by Driver Influence")
+
+ggplot(filter(ksi_sf, ACCLOC == " ")) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = PEDACT))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Undefined Locations by Driver Influence and Pedestrian Action")
+
+ggplot(filter(ksi_sf, ACCLOC == " ")) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = PEDTYPE))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Undefined Locations by Driver Influence and Vehicle Action")
+```
+
+
+## Factoring for Income
+
+We have already been able to identify the non economic factors that are influencing the likelihood of a loss. Now we need to explore how these factors are distributed by Average Income.
+
+We have already observed that the the frequency and cause of a pedestrian accident correlates directly to how the driver is driving their vehicle and where the accident is occurring. 
+
+If we compare these against average income we can clearly see that as a pedestrian you are most at risk of being involved in an accident if you are in an area with average household income between 60k and 90k (30K to 45K per income earner)
+
+We have also already observed that accident location can really be grouped into two groups. Accidents occurring at an intersection and accidents occurring at other points on the street such as mid-block. Graphing accident location details by income reinforces this grouping. As such going forward we will be filtering the data set as two groups:
+  - At Intersection or Intersection related
+  - No location identified or Non intersection
+
+All other location variables will not be used.
+
+```{r}
+ggplot(ksi_sf) +
+  geom_bar(mapping = aes(x = Average_Income, fill = VEHFACTORS))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  facet_wrap(~ ACCLOC, scales = "free")+
+  ggtitle(" Accidents grouped by Accident Location \n graphed by Average Income and Driver Influence")
+```
+
+
+### Accidents occurring at an Intersection
+
+We have already observed that the the frequency and cause of a pedestrian accident correlates directly to how the driver is driving their vehicle.
+
+If we return to our Accidents at intersections by Driver Influence graph and overlay income data we will see that when a driver is driving their vehicle aggressively about 63% of accidents occur in low income areas. When the driver is not driving aggressively, about 60% of accidents occur in low income areas.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == c("At Intersection", "Intersection Related"))) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = Average_Income))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Intersections grouped by Driver influence and Average Income")
+```
+
+It is actually more informative if we re-scale and look at each driver influences separately. We will run two sets of graphs. 
+The first will graph what action the pedestrian was taking when struck by a vehicle based on the factors that were influencing the driver where frequency is associated to average income.
+The first will graph what action the driver was taking when they struck a pedestrian based on the factors that were influencing the driver where frequency is associated to average income.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == c("At Intersection", "Intersection Related"))) +
+  geom_bar(aes(Average_Income, fill = PEDACT))+
+  facet_wrap(~ VEHFACTORS, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == c("At Intersection", "Intersection Related"))) +
+  geom_bar(aes(Average_Income, fill = PEDTYPE))+
+  facet_wrap(~ VEHFACTORS, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+From these graphs we can see that as a pedestrian you are most at risk of being involved in an accident if you are in an area with average household income between 60k and 90k (30K to 45K per income earner)
+However the likely cause of the accident changes based on how the driver of the vehicle is driving.
+
+Aggressive Driving:
+- If the driver is driving aggressively, pedestrians are most likely to be hit:
+      - while crossing at an intersection when they have the right of way
+      because
+      - the driver is turning instead of proceeding through the intersection.
+
+No Driver Influence:
+- If the driver is under no influence, pedestrians are most likely to be hit:
+      - while crossing at intersections where there is no traffic control
+      or
+      - while crossing at intersections when they do not have the right of way
+      and
+      - the driver is proceeding through the intersection
+
+Speeding:
+- If the driver is speeding, pedestrians are most likely to be hit:
+      - while walking on the sidewalk or shoulder of the street and is struck 
+      or 
+      - while crossing an intersection with or without the right of way
+      and
+      - the driver is proceeding through the intersection.
+
+### Accidents Not occurring at an intersection.
+
+If we run the same graphs but filter our data to focus on accidents that did not occur at an intersection, the distribution of accidents by average income level doesn't appear to have change that drastically.
+      - Pedestrians are still most likely to be involved in an accident in an area with average household income between 60k and 90k (30K to 45K per income earner)
+      - And our findings from above based on the primary three driver influences remain largely unchanged. 
+The only major difference is that once the accidents are removed from the intersection, the impact speeding and aggressive driving have on overall accident frequency is significantly diminished.
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == c(" ","Non Intersection"))) +
+  geom_bar(mapping = aes(x = VEHFACTORS, fill = Average_Income))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Driver Influence")+
+  ggtitle("Accidents at Intersections grouped by Driver influence and Average Income")
+
+ggplot(filter(ksi_sf, ACCLOC == c(" ","Non Intersection"))) +
+  geom_bar(aes(Average_Income, fill = PEDACT))+
+  facet_wrap(~ VEHFACTORS, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(filter(ksi_sf, ACCLOC == c(" ","Non Intersection"))) +
+  geom_bar(aes(Average_Income, fill = PEDTYPE))+
+  facet_wrap(~ VEHFACTORS, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+### Traffic Control Measures 
+
+As we look at all our income related graphs we notice the same pattern there are decidedly fewer pedestrians in higher income areas (areas 110K and up). The question becomes do we have enough data to determine if there is a reason for the drop.
+
+```{r}
+ggplot(ksi_sf) +
+  geom_bar(aes(Average_Income, fill = TRAFFCTL))+
+  facet_wrap(~ TRAFFCTL, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+ggplot(filter(ksi_sf, Average_Income == c("100", "110", "120","130", "140", "150", "150+"))) +
+  geom_bar(aes(Average_Income, fill = TRAFFCTL))+
+  facet_wrap(~ District, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+## Conclusion
+
+Our intention with this review was to determine if the socioeconomic status of a given area affects the likelihood of a pedestrian being hit in that area. We have seen that total number of accidents per year does not fluctuate widely. We have also seen that accidents occur in the same district at approximately the same proportion every year. And we have seen that no single factor or combination of factors seems to disrupt the distribution of accidents. 
+
+Ultimately, we have clearly demonstrated that if you are walking in a mid to low income neighbourhood you are at a higher risk of being hit by a vehicle than if you are walking in a higher income neighbourhood. However, there insufficient evidence in the data available to definitely identify average household income as the reason for this increased in risk.
+
+We can however say that in Etobicoke, North York, and Scarborough there is a very evident issue in these low to middle income neighbourhoods of aggressive driving resulting in pedestrian accidents. Since we have also clearly linked these aggressive driving accidents to right and left hand turns, it may be wise for the city to investigate measures that could be put into place to prevent these issues such as dedicated periods for all lane pedestrian crossings, limiting left turns to designated turning windows, or staggering the pedestrian and vehicular traffic signals similar to jurisdictions such as Montreal to ensure that the pedestrian will be half way through the intersection before drivers receive the right to proceed.
+
+```{r}
+ggplot(filter(ksi_sf, District == c("Etobicoke York", "North York", "Scarborough", "Toronto and East York"))) +
+  geom_bar(aes(Average_Income, fill = VEHFACTORS))+
+  facet_wrap(~ District, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+fluctuate in the 175 to 200 item range only dropping below 175 three times and exceeding 200 four times over the 11 years of data.tends to be relatively   We have been able to determine that  if you are in an area with average household income between 60k and 90k (30K to 45K per income earner)
+However the likely cause of the accident changes based on how the driver of the vehicle is driving.
+
+As per Statistics Canada the Median After-Tax Household Income in 2017 for the city of Toronto was $69,100.
+(Persons not in an economic family coming in at just below 32,400, and economic families coming in at 88,600k)
+Statistics Canada.  Table  11-10-0190-01   Market income, government transfers, total income, income tax and after-tax income by economic family type
+
+Using the Low-Income Measure (LIM) which defines the poverty rate as 50 per cent of the median household income that would set the LIM at 39K
+
+
+
+
+
+
+
+```{r}
+ggplot(filter(ksi_sf, ACCLOC == c(" ","Non Intersection"))) +
+  geom_bar(aes(Average_Income, fill = PEDACT))+
+  facet_wrap(~ VEHFACTORS, scales = "free")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+
+On final graph of accidents in Toronto. Hover over each accident to view details on the map about the accident in question.
+
+```{r}
+Lcontent <- paste("Year:", ksi_coord@data$YEAR,
+                  "Income:",ksi_coord@data$Household.Average.Income, 
+                  "Accident Location:",
+                  ksi_coord@data$ACCLOC,
+                  "Vehicle Action:", ksi_coord@data$PEDTYPE)
+
+leaflet(ksi_coord) %>%
   addTiles() %>%
-  addMarkers(lng = ksi_nbh$LONGITUDE.x , lat = ksi_nbh$LATITUDE.x , clusterOptions = ksi_nbh$OBJECTID) %>%
+  addCircleMarkers(
+    stroke = FALSE, fillOpacity = 0.5,weight = 1,
+    label = ~as.character(Lcontent),
+    clusterOptions = markerClusterOptions()) %>%
+  addPolygons(data = nbh_modified,
+              fillColor = "transparent", 
+              color = "#000000",
+              fillOpacity = 0.8,
+              group = "Neighbourhood", 
+              weight = 2) %>%
+  addPolygons(data = ctr,
+              fillColor = "transparent", 
+              color = "#000000",
+              fillOpacity = 0.8,
+              group = "Census Tract", 
+              weight = .8) %>%
+  addPolygons(data = disem,
+              fillColor = "transparent", 
+              color = "#000000",
+              fillOpacity = 0.8,
+              group = "Dissemination Area", 
+              weight = .4) %>%
+  addLayersControl(overlayGroups =c("Neighbourhood", "Census Tract", "Dissemination Area"),
+                   options = layersControlOptions(collapsed=FALSE))
+
 ```
-
-
-```{r}
-cen_shp1 <- st_read("datasets/SimplyAnalytics_C1/C1.shp")
-```
-
-```{r}
-cen_spgdf1 <- as(cen_shp1, "Spatial")
-class(cen_spgdf1)
-```
-
