@@ -331,7 +331,7 @@ To do:
 
 1) Establish income bandwiths and associate back to main datatable.
 
-2) Continue with frequency revie and comparison of various variables.
+2) Continue with frequency review and comparison of various variables.
 
 3) Correct clustering as part of the evaluation. Example below does not help given it cannot be read.
 
