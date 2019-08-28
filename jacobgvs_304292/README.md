@@ -47,19 +47,14 @@ There are 5 main data sources.
 
 
 ## Screenshots
-The spatialEco package allowed us to identify if a spatial data point was within a polygon and automatically leftjoin the applicable polygon data to our SpatialPointsDataframe. 
 
-![Associating Data with the spatialEco package](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/AssociatingDatasets.PNG)
+![Accidents per Year by Average Income](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/final/Average%20Accidents%20by%20income%20yearly.PNG)
 
-This allowed us to begin reviewing the dataset and its relation to the average income of a census tract.
+![Average Income by District](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/final/Income_by_District.PNG)
 
-![Household Average Income Histogram](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/Income_histogram.PNG)
+![Driver Influence by Average Income by Vehicle Action](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/final/Influence_by_Income_by_VehAction.PNG)
 
-We were also able to begin joining all the variables together into one map.
-
-![Leaflet Mapping - Neighbourhood, census tract, and dissemination area options](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/ksi_polygon_mapping.PNG)
-
-![Leaflet Mapping - Data Point Labels](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/sprint_2/ksi_polygon_label.PNG)
+![Accident location by Average Income and Driver Influence](https://github.com/JacobGvs/CSDA-1050F18S1/blob/master/jacobgvs_304292/final/AccLoc_Income_DriverInfl.PNG)
 
 ## Installation
 To intall this project you will need to download and opend the "Socioeconomics.Rmd" file.
