@@ -1,6 +1,8 @@
 ---
 title: "Socioeconomics of Pedestrian Accidents"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ## Introduction
